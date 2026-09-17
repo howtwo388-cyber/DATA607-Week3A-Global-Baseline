@@ -1,0 +1,123 @@
+---
+title: "DATA 607 Week 3A – Global Baseline"
+author: "Patricio Romero"
+date: "2026-09-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Recommendation systems use information about users' preferences to predict how they may evaluate items they have not yet rated. In this project, movie ratings from several critics will be used to estimate an unknown rating. The specific objective is to predict the rating that Param would give to *Pitch Perfect 2*.
+
+The project uses PostgreSQL to store the observed movie ratings and R to retrieve, prepare, analyze, and model the data. The prediction will be calculated using the Global Baseline method demonstrated in the course materials.
+
+## Data Collection
+
+The original data were provided in the `MovieRatings` worksheet of the `MovieRatings.xlsx` workbook. The worksheet contained a rating matrix in which each row represented a critic and each movie appeared in a separate column.
+
+The dataset included the following six movies:
+
+- Captain America
+- Deadpool
+- Frozen
+- Jungle Book
+- Pitch Perfect 2
+- Star Wars Force
+
+Numeric cells represented observed ratings. Blank cells represented movies that a critic had not rated. Param's rating for *Pitch Perfect 2* was identified as unknown in the accompanying problem statement.
+
+The blank cells and the question mark were treated as missing observations. They were not converted to zero and were not replaced with percentile-based estimates because the purpose of this analysis is to estimate the unknown rating through the recommendation model.
+
+## Planned Approach
+
+The analysis will follow these steps:
+
+1. Convert the original wide rating matrix into a long-format dataset.
+2. Retain only observed numeric ratings.
+3. Store the prepared data in PostgreSQL.
+4. Connect R to the PostgreSQL database.
+5. Retrieve the rating records into R.
+6. Validate the number and structure of the retrieved observations.
+7. Calculate the global mean rating.
+8. Calculate the user bias for Param.
+9. Calculate the movie bias for *Pitch Perfect 2*.
+10. Combine these components to obtain the Global Baseline estimate.
+11. Compare the calculated result with the professor's example.
+
+The Global Baseline prediction will use the following equation:
+
+$$
+\hat{r}_{u,i} = \mu + b_u + b_i
+$$
+
+
+where $\mu$ is the global mean, $b_u$ is the user bias, and $b_i$ is the movie bias.
+
+## Data Preparation
+
+The original worksheet was transformed from wide format into a long-format dataset with the following variables:
+
+- `critic`: name of the person who provided the rating
+- `movie`: name of the rated movie
+- `rating`: observed numeric rating
+
+Only numeric ratings were retained. Missing values were omitted from the long-format dataset, resulting in 61 observed critic-movie ratings.
+
+The prepared records were saved as `movie_ratings.csv` and imported into the PostgreSQL table `movie_ratings`. The table contains a generated identifier named `rating_id` in addition to the three analytical variables.
+
+Before beginning the analysis in R, the imported data were checked in PostgreSQL. The validation confirmed that the table contained 61 observations and that no record existed for Param and *Pitch Perfect 2*. The global mean of approximately 3.9344 and Param's observed mean of 3.5 were also consistent with the professor's example.
+
+## Data Retrieval from PostgreSQL
+
+The next stage retrieves the observed ratings directly from the PostgreSQL database into R. This keeps the database as the source of the stored observations while R performs the statistical calculations and produces the final report.
+
+```{r load-packages, message=FALSE, warning=FALSE}
+library(DBI)
+library(RPostgres)
+```
+
+```{r database-connection, echo=FALSE, message=FALSE, warning=FALSE}
+con <- dbConnect(
+  RPostgres::Postgres(),
+  host = "127.0.0.1",
+  port = 55433,
+  dbname = "data607_week3",
+  user = "postgres",
+  password = Sys.getenv("DATA607_DB_PASSWORD")
+)
+```
+
+```{r retrieve-data}
+ratings <- dbGetQuery(
+  con,
+  "
+  SELECT critic, movie, rating
+  FROM movie_ratings
+  ORDER BY critic, movie
+  "
+)
+
+head(ratings)
+```
+
+## Data Validation
+
+The retrieved data were validated before calculating the Global Baseline estimate.
+
+```{r validate-data}
+data.frame(
+  observed_ratings = nrow(ratings),
+  param_pitch_perfect_rows = sum(
+    ratings$critic == "Param" &
+    ratings$movie == "Pitch Perfect 2"
+  )
+)
+```
+
+## AI Use
+
+ChatGPT was used to help interpret the assignment requirements, organize the planned approach, improve the English writing, select an appropriate database structure, and provide coding guidance. I prepared and imported the movie-rating data, ran the code, reviewed the results, and confirmed the conclusions myself.
