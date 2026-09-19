@@ -1,7 +1,7 @@
 ---
 title: "DATA 607 Week 3A – Global Baseline"
 author: "Patricio Romero"
-date: "2026-09-17"
+date: "2026-09-19"
 output: html_document
 ---
 
@@ -41,12 +41,15 @@ The analysis will follow these steps:
 3. Store the prepared data in PostgreSQL.
 4. Connect R to the PostgreSQL database.
 5. Retrieve the rating records into R.
-6. Data Validation.
+6. Validate the retrieved data and confirm that Param's rating for Pitch Perfect 2 is missing.
 7. Calculate the global mean rating.
 8. Calculate the user bias for Param.
 9. Calculate the movie bias for *Pitch Perfect 2*.
-10. Combine these components to obtain the Global Baseline estimate.
+10. Combine these components to obtain the Global Baseline estimate for Pitch Perfect 2.
 11. Compare the calculated result with the professor's example.
+12. Identify all movies that Param has not rated.
+13. Calculate a Global Baseline prediction for each unrated movie.
+14. Rank the candidate movies by predicted rating and recommend the movie with the highest predicted rating.
 
 The Global Baseline prediction will use the following equation:
 
@@ -101,7 +104,7 @@ ratings <- dbGetQuery(
 
 head(ratings)
 ```
-## ## Data Validation
+## Data Validation
 
 The retrieved data were validated before calculating the Global Baseline estimate.
 
@@ -188,11 +191,71 @@ data.frame(
 
 The estimate calculated in R is approximately **2.28**, which is consistent with the Global Baseline result demonstrated in the course spreadsheet. This confirms that the R implementation reproduces the expected calculation.
 
+## Recommendation for Param
+
+The course example also requires evaluating all movies that Param has not rated and recommending the movie with the highest Global Baseline prediction.
+
+```{r candidate-movie-predictions}
+all_movies <- sort(unique(ratings$movie))
+
+param_rated_movies <- unique(
+  ratings$movie[ratings$critic == "Param"]
+)
+
+candidate_movies <- setdiff(
+  all_movies,
+  param_rated_movies
+)
+
+movie_bias_table <- data.frame(
+  movie = all_movies,
+  movie_mean = sapply(
+    all_movies,
+    function(m) {
+      mean(
+        ratings$rating[ratings$movie == m],
+        na.rm = TRUE
+      )
+    }
+  )
+)
+
+movie_bias_table$movie_bias <-
+  movie_bias_table$movie_mean - global_mean
+
+candidate_predictions <- movie_bias_table[
+  movie_bias_table$movie %in% candidate_movies,
+  c("movie", "movie_bias")
+]
+
+candidate_predictions$predicted_rating <-
+  global_mean +
+  param_bias +
+  candidate_predictions$movie_bias
+
+candidate_predictions <- candidate_predictions[
+  order(
+    candidate_predictions$predicted_rating,
+    decreasing = TRUE
+  ),
+]
+
+candidate_predictions
+```
+
+Param has not rated *Jungle Book* or *Pitch Perfect 2*. The Global Baseline prediction is approximately **3.47** for *Jungle Book* and **2.28** for *Pitch Perfect 2*.
+
+Because *Jungle Book* has the higher predicted rating, it is the recommended movie for Param among the movies he has not yet rated.
+
 ## Conclusion
 
 The analysis successfully implemented the Global Baseline Estimate using movie ratings stored in PostgreSQL and analyzed in R. The overall mean rating was approximately **3.9344**, Param's mean observed rating was **3.5**, and his user bias was approximately **-0.4344**. *Pitch Perfect 2* had an average observed rating of approximately **2.7143** and a movie bias of approximately **-1.2201**.
 
-Combining these components produced a predicted rating of approximately **2.28** for Param and *Pitch Perfect 2*. The result is consistent with the example provided in the course materials.
+Combining these components produced a predicted rating of approximately **2.28** for Param and *Pitch Perfect 2*. This result is consistent with the example provided in the course materials.
+
+The analysis was then extended to all movies that Param had not rated. The Global Baseline predictions were approximately **3.47** for *Jungle Book* and **2.28** for *Pitch Perfect 2*. Because *Jungle Book* had the highest predicted rating among the unrated movies, it is the recommended movie for Param.
+
+The implementation therefore reproduces the expected Global Baseline calculation and uses the same method to generate a recommendation from Param's unrated movies.
 
 ## Database Connection Cleanup
 

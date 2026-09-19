@@ -11,7 +11,7 @@
 
 <meta name="author" content="Patricio Romero" />
 
-<meta name="date" content="2026-09-17" />
+<meta name="date" content="2026-09-19" />
 
 <title>DATA 607 Week 3A – Global Baseline</title>
 
@@ -352,7 +352,7 @@ display: none;
 
 <h1 class="title toc-ignore">DATA 607 Week 3A – Global Baseline</h1>
 <h4 class="author">Patricio Romero</h4>
-<h4 class="date">2026-09-17</h4>
+<h4 class="date">2026-09-19</h4>
 
 </div>
 
@@ -403,13 +403,18 @@ dataset.</li>
 <li>Store the prepared data in PostgreSQL.</li>
 <li>Connect R to the PostgreSQL database.</li>
 <li>Retrieve the rating records into R.</li>
-<li>Data Validation.</li>
+<li>Validate the retrieved data and confirm that Param’s rating for
+Pitch Perfect 2 is missing.</li>
 <li>Calculate the global mean rating.</li>
 <li>Calculate the user bias for Param.</li>
 <li>Calculate the movie bias for <em>Pitch Perfect 2</em>.</li>
-<li>Combine these components to obtain the Global Baseline
-estimate.</li>
+<li>Combine these components to obtain the Global Baseline estimate for
+Pitch Perfect 2.</li>
 <li>Compare the calculated result with the professor’s example.</li>
+<li>Identify all movies that Param has not rated.</li>
+<li>Calculate a Global Baseline prediction for each unrated movie.</li>
+<li>Rank the candidate movies by predicted rating and recommend the
+movie with the highest predicted rating.</li>
 </ol>
 <p>The Global Baseline prediction will use the following equation:</p>
 <p><span class="math display">\[
@@ -467,7 +472,7 @@ head(ratings)</code></pre>
 ## 6 Charley     Jungle Book      3</code></pre>
 </div>
 <div id="data-validation" class="section level2">
-<h2>## Data Validation</h2>
+<h2>Data Validation</h2>
 <p>The retrieved data were validated before calculating the Global
 Baseline estimate.</p>
 <pre class="r"><code>data.frame(
@@ -560,6 +565,67 @@ which is consistent with the Global Baseline result demonstrated in the
 course spreadsheet. This confirms that the R implementation reproduces
 the expected calculation.</p>
 </div>
+<div id="recommendation-for-param" class="section level2">
+<h2>Recommendation for Param</h2>
+<p>The course example also requires evaluating all movies that Param has
+not rated and recommending the movie with the highest Global Baseline
+prediction.</p>
+<pre class="r"><code>all_movies &lt;- sort(unique(ratings$movie))
+
+param_rated_movies &lt;- unique(
+  ratings$movie[ratings$critic == &quot;Param&quot;]
+)
+
+candidate_movies &lt;- setdiff(
+  all_movies,
+  param_rated_movies
+)
+
+movie_bias_table &lt;- data.frame(
+  movie = all_movies,
+  movie_mean = sapply(
+    all_movies,
+    function(m) {
+      mean(
+        ratings$rating[ratings$movie == m],
+        na.rm = TRUE
+      )
+    }
+  )
+)
+
+movie_bias_table$movie_bias &lt;-
+  movie_bias_table$movie_mean - global_mean
+
+candidate_predictions &lt;- movie_bias_table[
+  movie_bias_table$movie %in% candidate_movies,
+  c(&quot;movie&quot;, &quot;movie_bias&quot;)
+]
+
+candidate_predictions$predicted_rating &lt;-
+  global_mean +
+  param_bias +
+  candidate_predictions$movie_bias
+
+candidate_predictions &lt;- candidate_predictions[
+  order(
+    candidate_predictions$predicted_rating,
+    decreasing = TRUE
+  ),
+]
+
+candidate_predictions</code></pre>
+<pre><code>##                           movie  movie_bias predicted_rating
+## Jungle Book         Jungle Book -0.03442623         3.465574
+## Pitch Perfect 2 Pitch Perfect 2 -1.22014052         2.279859</code></pre>
+<p>Param has not rated <em>Jungle Book</em> or <em>Pitch Perfect 2</em>.
+The Global Baseline prediction is approximately <strong>3.47</strong>
+for <em>Jungle Book</em> and <strong>2.28</strong> for <em>Pitch Perfect
+2</em>.</p>
+<p>Because <em>Jungle Book</em> has the higher predicted rating, it is
+the recommended movie for Param among the movies he has not yet
+rated.</p>
+</div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
 <p>The analysis successfully implemented the Global Baseline Estimate
@@ -571,8 +637,17 @@ average observed rating of approximately <strong>2.7143</strong> and a
 movie bias of approximately <strong>-1.2201</strong>.</p>
 <p>Combining these components produced a predicted rating of
 approximately <strong>2.28</strong> for Param and <em>Pitch Perfect
-2</em>. The result is consistent with the example provided in the course
-materials.</p>
+2</em>. This result is consistent with the example provided in the
+course materials.</p>
+<p>The analysis was then extended to all movies that Param had not
+rated. The Global Baseline predictions were approximately
+<strong>3.47</strong> for <em>Jungle Book</em> and <strong>2.28</strong>
+for <em>Pitch Perfect 2</em>. Because <em>Jungle Book</em> had the
+highest predicted rating among the unrated movies, it is the recommended
+movie for Param.</p>
+<p>The implementation therefore reproduces the expected Global Baseline
+calculation and uses the same method to generate a recommendation from
+Param’s unrated movies.</p>
 </div>
 <div id="database-connection-cleanup" class="section level2">
 <h2>Database Connection Cleanup</h2>
