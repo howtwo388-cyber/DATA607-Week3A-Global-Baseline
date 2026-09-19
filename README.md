@@ -1,48 +1,50 @@
-# DATA 607 Week 3A – Global Baseline
+# DATA 607 – Week 3A: Global Baseline Estimate
 
-This repository contains the planned approach and data preparation for a movie-rating recommendation analysis using PostgreSQL and R.
+## Overview
 
-## Objective
+This project implements a Global Baseline Estimate recommendation system using movie ratings provided in the DATA 607 course materials.
 
-The objective is to estimate Param's missing rating for *Pitch Perfect 2* using the Global Baseline recommendation method.
+The objective is to predict how **Param would rate Pitch Perfect 2** based on the overall rating average, Param's rating behavior, and the average rating behavior for the movie.
 
-## Data
+## Technologies Used
 
-The source data came from the `MovieRatings` worksheet in the provided Excel workbook. The original rating matrix was converted to long format with three variables:
-
-- `critic`
-- `movie`
-- `rating`
-
-Blank cells and the question mark were treated as missing observations. The prepared dataset contains 61 observed ratings.
-
-## Workflow
-
-1. Prepare the movie-rating data.
-2. Import the observed ratings into PostgreSQL.
-3. Retrieve the data from PostgreSQL using R.
-4. Validate the imported observations.
-5. Calculate the Global Baseline estimate in R.
-
-## Repository Files
-
-- `movie_ratings.csv`: observed movie ratings in long format
-- `DATA-607-Week-3A-Global-Baseline.Rmd`: R Markdown source
-- `DATA-607-Week-3A-Global-Baseline.html`: rendered report
-- `Week 3A.Rproj`: RStudio project file
-
-## Published Report
-
-[View the report on RPubs](https://rpubs.com/howtwo3/data607-week3a-global-baseline)
-
-## Tools
-
-- R and RStudio
+- R
+- R Markdown
 - PostgreSQL
-- pgAdmin
 - DBI
 - RPostgres
 
+## Method
+
+The original movie-rating matrix was converted into long format and stored in PostgreSQL. R was then used to retrieve and analyze the observed ratings.
+
+The Global Baseline Estimate is calculated as:
+
+**Predicted Rating = Global Mean + User Bias + Movie Bias**
+
+The analysis produced:
+
+- Global Mean: **3.9344**
+- Param Mean: **3.5000**
+- Param User Bias: **-0.4344**
+- Pitch Perfect 2 Mean: **2.7143**
+- Pitch Perfect 2 Movie Bias: **-1.2201**
+- Predicted Rating: **2.2799**
+
+Therefore, the estimated rating that Param would give to **Pitch Perfect 2 is approximately 2.28**.
+
+## Files
+
+- `DATA 607 Week 3A – Global Baseline.Rmd` – R Markdown source code and analysis
+- `DATA-607-Week-3A-–-Global-Baseline.html` – Rendered HTML report
+- `movie_ratings.csv` – Long-format movie ratings used for the database import
+- `MovieRatings.xlsx` – Original course dataset
+
 ## AI Use
 
-ChatGPT was used to help interpret the assignment requirements, organize the planned approach, improve the English writing, select an appropriate database structure, and provide coding guidance. The data, code, results, and conclusions were reviewed and confirmed by the author.
+ChatGPT was used to help interpret the assignment requirements, organize the planned approach, improve the English writing, select an appropriate database structure, and provide coding guidance. I prepared and imported the movie-rating data, ran the code, reviewed the results, and confirmed the conclusions myself.
+
+## Author
+
+Patricio Romero  
+DATA 607 – Fall 2026
