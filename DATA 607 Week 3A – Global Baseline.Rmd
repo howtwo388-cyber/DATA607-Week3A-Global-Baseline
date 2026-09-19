@@ -41,7 +41,7 @@ The analysis will follow these steps:
 3. Store the prepared data in PostgreSQL.
 4. Connect R to the PostgreSQL database.
 5. Retrieve the rating records into R.
-6. Validate the number and structure of the retrieved observations.
+6. Data Validation.
 7. Calculate the global mean rating.
 8. Calculate the user bias for Param.
 9. Calculate the movie bias for *Pitch Perfect 2*.
@@ -53,8 +53,6 @@ The Global Baseline prediction will use the following equation:
 $$
 \hat{r}_{u,i} = \mu + b_u + b_i
 $$
-
-
 where $\mu$ is the global mean, $b_u$ is the user bias, and $b_i$ is the movie bias.
 
 ## Data Preparation
@@ -103,8 +101,7 @@ ratings <- dbGetQuery(
 
 head(ratings)
 ```
-
-## Data Validation
+## ## Data Validation
 
 The retrieved data were validated before calculating the Global Baseline estimate.
 
@@ -116,6 +113,91 @@ data.frame(
     ratings$movie == "Pitch Perfect 2"
   )
 )
+```
+## Global Mean Rating
+
+The first component of the Global Baseline Estimate is the global mean, which represents the average of all observed movie ratings in the dataset.
+
+```{r global-mean}
+global_mean <- mean(ratings$rating, na.rm = TRUE)
+
+global_mean
+```
+
+The global mean rating is approximately **3.9344**. This value represents the overall average rating across all critics and all observed movie ratings.
+
+## Param's Mean Rating and User Bias
+
+The next component is Param's user bias. First, the mean of Param's observed ratings is calculated. The unknown rating for *Pitch Perfect 2* is not included in this calculation.
+
+```{r param-user-bias}
+param_mean <- mean(
+  ratings$rating[ratings$critic == "Param"],
+  na.rm = TRUE
+)
+
+param_bias <- param_mean - global_mean
+
+param_mean
+param_bias
+```
+
+Param's mean rating is **3.5**. The user bias is calculated as Param's mean rating minus the global mean. A negative bias indicates that Param's observed ratings are, on average, lower than the overall rating average.
+
+## Pitch Perfect 2 Movie Bias
+
+The movie bias measures how the observed ratings for *Pitch Perfect 2* differ from the overall global mean.
+
+```{r pitch-perfect-bias}
+pitch_mean <- mean(
+  ratings$rating[ratings$movie == "Pitch Perfect 2"],
+  na.rm = TRUE
+)
+
+pitch_bias <- pitch_mean - global_mean
+
+pitch_mean
+pitch_bias
+```
+
+## Global Baseline Estimate
+
+The Global Baseline Estimate combines the global mean, Param's user bias, and the movie bias for *Pitch Perfect 2*.
+
+```{r global-baseline-estimate}
+global_baseline_estimate <- global_mean + param_bias + pitch_bias
+
+global_baseline_estimate
+```
+
+Using the Global Baseline method, the predicted rating that Param would give to *Pitch Perfect 2* is approximately **2.28**.
+
+## Validation Against the Course Example
+
+The calculated Global Baseline Estimate was compared with the result provided in the course spreadsheet.
+
+```{r validate-estimate}
+professor_example <- 2.2798594847775178
+
+data.frame(
+  R_Estimate = global_baseline_estimate,
+  Professor_Example = professor_example,
+  Difference = abs(global_baseline_estimate - professor_example)
+)
+```
+
+The estimate calculated in R is approximately **2.28**, which is consistent with the Global Baseline result demonstrated in the course spreadsheet. This confirms that the R implementation reproduces the expected calculation.
+
+## Conclusion
+
+The analysis successfully implemented the Global Baseline Estimate using movie ratings stored in PostgreSQL and analyzed in R. The overall mean rating was approximately **3.9344**, Param's mean observed rating was **3.5**, and his user bias was approximately **-0.4344**. *Pitch Perfect 2* had an average observed rating of approximately **2.7143** and a movie bias of approximately **-1.2201**.
+
+Combining these components produced a predicted rating of approximately **2.28** for Param and *Pitch Perfect 2*. The result is consistent with the example provided in the course materials.
+
+## Database Connection Cleanup
+
+```{r disconnect-database}
+dbDisconnect(con)
 ```
 
 ## AI Use
